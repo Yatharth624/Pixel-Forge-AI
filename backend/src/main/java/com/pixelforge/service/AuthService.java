@@ -26,6 +26,11 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
+        String name = request.getFullName();
+        if (name == null || name.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "NAME_REQUIRED", "Full name is required");
+        }
+
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "USER_EXISTS", "User with this email already exists");
         }
@@ -33,7 +38,7 @@ public class AuthService {
         User user = new User(
                 request.getEmail(),
                 passwordEncoder.encode(request.getPassword()),
-                request.getFullName()
+                name
         );
         User savedUser = userRepository.save(user);
 

@@ -15,11 +15,21 @@ export const Register: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!fullName.trim()) {
+      setError('Please enter your full name');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      const res = await apiClient.post('/auth/register', { fullName, email, password });
+      const res = await apiClient.post('/auth/register', {
+        fullName: fullName.trim(),
+        name: fullName.trim(),
+        email: email.trim(),
+        password: password
+      });
       if (res.data.success) {
         login(res.data.data.token, res.data.data.user);
         navigate('/dashboard');
