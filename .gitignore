@@ -1,0 +1,28 @@
+# IDE & System
+.idea/
+.vscode/
+*.swp
+*.DS_Store
+Thumbs.db
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.tmp/
+frontend/coverage/
+
+# Java / Backend
+backend/target/
+backend/data/
+data/
+
+# Python / CV Service
+cv-service/__pycache__/
+cv-service/*.pyc
+cv-service/.pytest_cache/
+cv-service/venv/
+cv-service/.venv/
+
+# Docker & Environment
+*.env
+!.env.example
