@@ -1,60 +1,39 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { User } from '../types';
-import { apiClient } from '../api/client';
 
 interface AuthContextType {
-  user: User | null;
-  token: String | null;
+  user: User;
+  token: string;
   login: (token: string, user: User) => void;
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
 
+const DEFAULT_USER: User = {
+  id: '00000000-0000-0000-0000-000000000001',
+  email: 'demo@pixelforge.ai',
+  fullName: 'PixelForge User',
+  role: 'ROLE_USER'
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('pixelforge_user');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('pixelforge_token'));
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const verifyToken = async () => {
-      if (token) {
-        try {
-          const res = await apiClient.get('/auth/me');
-          if (res.data.success) {
-            setUser(res.data.data);
-            localStorage.setItem('pixelforge_user', JSON.stringify(res.data.data));
-          }
-        } catch {
-          logout();
-        }
-      }
-      setIsLoading(false);
-    };
-    verifyToken();
-  }, [token]);
-
-  const login = (newToken: string, newUser: User) => {
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem('pixelforge_token', newToken);
-    localStorage.setItem('pixelforge_user', JSON.stringify(newUser));
-  };
-
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('pixelforge_token');
-    localStorage.removeItem('pixelforge_user');
-  };
+  const [user] = useState<User>(DEFAULT_USER);
+  const [token] = useState<string>('demo-token');
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token, isLoading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        login: () => {},
+        logout: () => {},
+        isAuthenticated: true,
+        isLoading: false
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

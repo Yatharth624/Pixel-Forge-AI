@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -35,34 +36,44 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String userEmail;
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String jwt = authHeader.substring(7);
+            try {
+                String userEmail = jwtService.extractUsername(jwt);
+                if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    Optional<User> userOpt = userRepository.findByEmail(userEmail);
+                    if (userOpt.isPresent() && jwtService.isTokenValid(jwt, userEmail)) {
+                        setSecurityUser(userOpt.get(), request);
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
+                }
+            } catch (Exception e) {
+                // Token invalid
+            }
         }
 
-        jwt = authHeader.substring(7);
-        try {
-            userEmail = jwtService.extractUsername(jwt);
-            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                Optional<User> userOpt = userRepository.findByEmail(userEmail);
-                if (userOpt.isPresent() && jwtService.isTokenValid(jwt, userEmail)) {
-                    User user = userOpt.get();
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            user,
-                            null,
-                            Collections.singletonList(new SimpleGrantedAuthority(user.getRole()))
-                    );
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                }
-            }
-        } catch (Exception e) {
-            // Token invalid or expired
+        // Fallback: Default workspace user for login-free access
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            User demoUser = userRepository.findByEmail("demo@pixelforge.ai")
+                    .orElseGet(() -> {
+                        User newDemo = new User("demo@pixelforge.ai", new BCryptPasswordEncoder().encode("password"), "PixelForge User");
+                        return userRepository.save(newDemo);
+                    });
+            setSecurityUser(demoUser, request);
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void setSecurityUser(User user, HttpServletRequest request) {
+        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                user,
+                null,
+                Collections.singletonList(new SimpleGrantedAuthority(user.getRole()))
+        );
+        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authToken);
     }
 }

@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import { Sidebar } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
 import { ImageUploadModal } from './components/ImageUploadModal';
 
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { ImagesGallery } from './pages/ImagesGallery';
 import { ImageDetail } from './pages/ImageDetail';
@@ -20,22 +18,8 @@ import { Settings } from './pages/Settings';
 
 const queryClient = new QueryClient();
 
-const ProtectedLayout: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+const MainLayout: React.FC = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">
-        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mr-3" />
-        <span className="text-xs font-semibold">Loading PixelForge AI...</span>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
 
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-100">
@@ -56,6 +40,7 @@ const ProtectedLayout: React.FC = () => {
             <Route path="/projects" element={<Projects />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
       </div>
@@ -74,11 +59,7 @@ export const App: React.FC = () => {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/*" element={<ProtectedLayout />} />
-          </Routes>
+          <MainLayout />
         </Router>
       </AuthProvider>
     </QueryClientProvider>
